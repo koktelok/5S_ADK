@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ADK Modulraum – 5S Audit</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --adk-blue:#0F5CA3;--adk-blue-dark:#0a3f73;--adk-blue-light:#e8f2fc;
+    --adk-light:#f2f6fb;--green:#27ae60;--yellow:#f39c12;--red:#e74c3c;--gray:#7f8c8d;
+  }
+  body{font-family:'Segoe UI',sans-serif;background:var(--adk-light);color:#222;font-size:15px}
+
+  header{background:var(--adk-blue-dark);color:#fff;padding:0 16px;display:flex;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.35);height:56px}
+  .logo-adk{font-size:23px;font-weight:900;color:#fff;letter-spacing:3px;font-style:italic;font-family:'Arial Black',Arial,sans-serif}
+  .logo-sub{font-size:9px;color:rgba(255,255,255,.7);letter-spacing:3px;text-transform:uppercase;margin-top:1px}
+
+  .nav{display:flex;background:#fff;border-bottom:3px solid var(--adk-blue);overflow-x:auto;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{flex:0 0 auto;padding:10px 13px;border:none;background:none;font-size:11.5px;font-weight:700;color:var(--gray);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-3px}
+  .nav button.active{color:var(--adk-blue);border-bottom-color:var(--adk-blue)}
+
+  .page{display:none;padding:14px;max-width:600px;margin:0 auto}
+  .page.active{display:block}
+
+  .card{background:#fff;border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 5px rgba(15,92,163,.1)}
+  .card h3{font-size:13.5px;color:var(--adk-blue);margin-bottom:10px;display:flex;align-items:center;gap:6px;font-weight:800}
+  label{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:4px}
+  input,select,textarea{width:100%;border:1.5px solid #cde;border-radius:7px;padding:9px 11px;font-size:14px;background:#fff;color:#222}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--adk-blue)}
+  textarea{resize:vertical;min-height:60px}
+  .form-row{margin-bottom:10px}
+
+  .s-header{background:linear-gradient(135deg,var(--adk-blue-dark),var(--adk-blue));color:#fff;border-radius:10px;padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+  .s-badge{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.4);border-radius:8px;padding:4px 10px;font-weight:900;font-size:15px;letter-spacing:1px;flex-shrink:0}
+  .s-header h2{font-size:15px;font-weight:800}
+  .s-header p{font-size:11px;opacity:.75;margin-top:2px}
+
+  .audit-item{background:#fff;border-radius:10px;margin-bottom:10px;box-shadow:0 1px 4px rgba(15,92,163,.1);border-left:4px solid #dde8f5;overflow:hidden}
+  .audit-item.scored-low{border-left-color:#e74c3c}
+  .audit-item.scored-mid{border-left-color:#f39c12}
+  .audit-item.scored-high{border-left-color:#27ae60}
+  .audit-item-header{padding:12px 13px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;cursor:pointer}
+  .audit-item-header span{font-size:13px;font-weight:600;flex:1;line-height:1.4}
+  .score-badge{flex-shrink:0;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff;background:#ccc}
+  .audit-item-body{padding:0 13px 13px;border-top:1px solid #edf3fa;display:none}
+  .audit-item-body.open{display:block}
+
+  .star-row{display:flex;gap:5px;margin:10px 0 4px}
+  .star-btn{flex:1;padding:9px 2px;border:2px solid #dde;border-radius:7px;background:#fff;font-size:13px;font-weight:800;cursor:pointer;text-align:center;color:#aaa}
+  .star-btn:hover{border-color:var(--adk-blue);color:var(--adk-blue)}
+  .star-btn.sel-1{background:#e74c3c;border-color:#e74c3c;color:#fff}
+  .star-btn.sel-2{background:#e67e22;border-color:#e67e22;color:#fff}
+  .star-btn.sel-3{background:#f39c12;border-color:#f39c12;color:#fff}
+  .star-btn.sel-4{background:#2ecc71;border-color:#2ecc71;color:#fff}
+  .star-btn.sel-5{background:#27ae60;border-color:#27ae60;color:#fff}
+  .score-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--gray);margin-bottom:8px}
+
+  .photo-area{border:2px dashed #b8d4ee;border-radius:8px;padding:14px;text-align:center;margin-top:8px;cursor:pointer;background:var(--adk-blue-light)}
+  .photo-area input{display:none}
+  .photo-label{cursor:pointer;color:var(--adk-blue);font-weight:700;font-size:13px;display:block}
+  .photo-sub{font-size:11px;color:#7a9ec0;margin-top:3px}
+  .photo-thumbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .photo-thumb{width:68px;height:68px;object-fit:cover;border-radius:7px;border:2px solid var(--adk-blue);cursor:pointer}
+
+  .score-circle{width:110px;height:110px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;color:#fff;margin:0 auto 14px;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+  .score-circle .big{font-size:30px;line-height:1}
+  .score-circle .sub{font-size:11px;opacity:.85}
+  .category-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .category-row .cat-name{flex:1;font-size:12.5px;font-weight:700}
+  .progress-bar{flex:2;height:10px;border-radius:5px;background:#e0eaf5;overflow:hidden}
+  .progress-fill{height:100%;border-radius:5px}
+  .cat-score{font-size:13px;font-weight:800;width:36px;text-align:right}
+  .deviation-tag{background:var(--adk-blue-light);border-left:3px solid var(--adk-blue);border-radius:0 7px 7px 0;padding:8px 11px;font-size:12px;margin-top:7px;line-height:1.6}
+
+  .btn{display:block;width:100%;padding:14px;border:none;border-radius:9px;font-size:15px;font-weight:800;cursor:pointer;margin-top:10px;text-align:center}
+  .btn-primary{background:var(--adk-blue);color:#fff;box-shadow:0 3px 10px rgba(15,92,163,.3)}
+  .btn-secondary{background:var(--adk-blue-dark);color:#fff}
+  .btn-outline{background:#fff;color:var(--adk-blue);border:2px solid var(--adk-blue)}
+  .btn:active{opacity:.85}
+
+  .week-banner{background:linear-gradient(135deg,var(--adk-blue-dark),var(--adk-blue));color:#fff;border-radius:9px;padding:10px 14px;font-size:12px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+  .week-banner .kw{font-size:20px;font-weight:900}
+
+  .schema-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .schema-dot{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;flex-shrink:0}
+  .schema-text{font-size:12px;color:#444;line-height:1.4}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--adk-blue-dark);color:#fff;padding:10px 24px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:999}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo-adk">ADK</div>
+    <div class="logo-sub">Modulare Gebäude</div>
+  </div>
+</header>
+
+<nav class="nav" id="mainNav">
+  <button class="active" onclick="showPage('startPage',this)">🏠 Start</button>
+  <button onclick="showPage('sort',this)">1S Sortieren</button>
+  <button onclick="showPage('setOrder',this)">2S Ordnung</button>
+  <button onclick="showPage('shine',this)">3S Sauberkeit</button>
+  <button onclick="showPage('standardize',this)">4S Standard</button>
+  <button onclick="showPage('sustain',this)">5S Disziplin</button>
+  <button onclick="showPage('summaryPage',this)">📊 Ergebnis</button>
+</nav>
+
+<div class="page active" id="startPage">
+  <div class="week-banner">
+    <div>
+      <div style="font-size:10px;opacity:.75;letter-spacing:1px">KALENDERWOCHE</div>
+      <div class="kw" id="kwNum">–</div>
+    </div>
+    <div style="text-align:right;font-size:11px;opacity:.85" id="dateStr"></div>
+  </div>
+  <div class="card">
+    <h3>📋 Audit-Informationen</h3>
+    <div class="form-row"><label>Auditor / Prüfer</label><input id="auditor" type="text" placeholder="Name eingeben"></div>
+    <div class="form-row"><label>Datum</label><input id="auditDate" type="date"></div>
+    <div class="form-row"><label>Schicht</label>
+      <select id="shift"><option>Frühschicht</option><option>Spätschicht</option><option>Nachtschicht</option></select>
+    </div>
+    <div class="form-row"><label>Bereich / Halle</label>
+      <select id="area">
+        <option>Halle 1 – Rohbau</option><option>Halle 2 – Ausbau</option>
+        <option>Halle 3 – Montage</option><option>Außenbereich</option>
+      </select>
+    </div>
+  </div>
+  <div class="card">
+    <h3>ℹ️ Bewertungsschema</h3>
+    <div class="schema-row"><div class="schema-dot" style="background:#e74c3c">1</div><div class="schema-text"><b>Sehr schlecht</b> – Sofortmaßnahme erforderlich</div></div>
+    <div class="schema-row"><div class="schema-dot" style="background:#e67e22">2</div><div class="schema-text"><b>Unzureichend</b> – Deutliche Abweichungen</div></div>
+    <div class="schema-row"><div class="schema-dot" style="background:#f39c12">3</div><div class="schema-text"><b>Ausreichend</b> – Kleinere Abweichungen</div></div>
+    <div class="schema-row"><div class="schema-dot" style="background:#2ecc71">4</div><div class="schema-text"><b>Gut</b> – Leichte Verbesserungen möglich</div></div>
+    <div class="schema-row"><div class="schema-dot" style="background:#27ae60">5</div><div class="schema-text"><b>Sehr gut</b> – Standard vollständig eingehalten</div></div>
+  </div>
+  <button class="btn btn-primary" onclick="showPage('sort',document.querySelectorAll('.nav button')[1])">▶ Audit starten</button>
+</div>
+
+<div class="page" id="sort"></div>
+<div class="page" id="setOrder"></div>
+<div class="page" id="shine"></div>
+<div class="page" id="standardize"></div>
+<div class="page" id="sustain"></div>
+
+<div class="page" id="summaryPage">
+  <div class="card" style="text-align:center;padding:20px 14px">
+    <h3 style="justify-content:center;margin-bottom:14px">📊 Gesamtergebnis</h3>
+    <div class="score-circle" id="totalCircle"><span class="big">–</span><span class="sub">von 5.0</span></div>
+    <div id="totalLabel" style="font-weight:800;font-size:16px;margin-bottom:4px;color:var(--adk-blue)"></div>
+    <div id="totalSub" style="font-size:12px;color:#777"></div>
+  </div>
+  <div class="card"><h3>Ergebnis je Kategorie</h3><div id="catResults"></div></div>
+  <div class="card"><h3>📍 Abweichungen & Standorte</h3><div id="deviationList"></div></div>
+  <button class="btn btn-secondary" onclick="generatePDF()">📄 PDF-Bericht exportieren</button>
+  <button class="btn btn-outline" onclick="resetAudit()" style="margin-top:8px">🔄 Neues Audit beginnen</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const HALLENSTUETZEN=['A1','A2','A3','A4','A5','A6','B1','B2','B3','B4','B5','B6','C1','C2','C3','C4','C5','C6','D1','D2','D3','D4','D5','D6','E1','E2','E3','E4','E5','E6','F1','F2','F3','F4','F5','F6','Eingang','Ausgang','Lager','Büro','Außenbereich'];
+
+const CATEGORIES=[
+  {id:'sort',key:'1S',name:'Sortieren',desc:'Trenne Notwendiges von Unnötigem – Rote Karten setzen',
+   items:['Unnötige Materialien und Werkzeuge wurden identifiziert und entfernt','Überbestände sind nicht vorhanden oder klar gekennzeichnet','Defekte Teile / Ausschuss sind markiert und getrennt gelagert','Persönliche Gegenstände nur in vorgesehenen Bereichen','Rote Karten (Red Tags) korrekt angebracht und aktuell']},
+  {id:'setOrder',key:'2S',name:'Systematisieren',desc:'Alles hat seinen festen, gekennzeichneten Platz',
+   items:['Alle Werkzeuge haben definierten und gekennzeichneten Stellplatz','Stellplätze sind klar markiert und frei zugänglich','Materialien nach Verbrauchshäufigkeit platziert','Gänge und Notausgänge sind frei und deutlich markiert','Visuelle Hilfsmittel (Beschriftungen, Bodenmarkierungen) vorhanden und lesbar']},
+  {id:'shine',key:'3S',name:'Sauberkeit',desc:'Arbeitsplatz reinigen und Verschmutzungsquellen beseitigen',
+   items:['Maschinen und Anlagen sauber und frei von Schmutz/Öl/Spänen','Böden gereinigt und frei von Verunreinigungen','Reinigungsplan vorhanden, sichtbar und aktuell','Reinigungsmittel und -geräte verfügbar und ordentlich gelagert','Abfallbehälter nicht überfüllt und korrekt befüllt']},
+  {id:'standardize',key:'4S',name:'Standardisieren',desc:'Standards festlegen, visualisieren und sichern',
+   items:['Visuelle Standards (Fotos, Zeichnungen) am Arbeitsplatz vorhanden','Arbeitsanweisungen aktuell, lesbar und am richtigen Ort','Verantwortlichkeiten für 5S-Aufgaben klar geregelt und bekannt','Checklisten und Auditpläne werden regelmäßig genutzt','Abweichungen vom Standard werden dokumentiert und verfolgt']},
+  {id:'sustain',key:'5S',name:'Selbstdisziplin',desc:'Standards einhalten und kontinuierlich verbessern',
+   items:['Mitarbeiter kennen und befolgen die 5S-Standards','Schulungen zu 5S wurden dokumentiert und durchgeführt','Verbesserungsvorschläge aus dem Team werden aufgenommen','Ergebnisse vorheriger Audits sind sichtbar ausgehängt','KVP-Maßnahmen aus letztem Audit wurden umgesetzt']}
+];
+
+const state={};
+
+function getWeek(d){
+  const date=new Date(d);date.setHours(0,0,0,0);
+  date.setDate(date.getDate()+4-(date.getDay()||7));
+  const y=new Date(date.getFullYear(),0,1);
+  return Math.ceil((((date-y)/86400000)+1)/7);
+}
+
+function init(){
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('auditDate').value=today;
+  document.getElementById('kwNum').textContent=getWeek(today);
+  document.getElementById('dateStr').textContent=new Date().toLocaleDateString('de-DE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  CATEGORIES.forEach(cat=>buildCategoryPage(cat));
+}
+
+function buildCategoryPage(cat){
+  const page=document.getElementById(cat.id);
+  let html=`<div class="s-header"><div class="s-badge">${cat.key}</div><div><h2>${cat.name}</h2><p>${cat.desc}</p></div></div>`;
+  cat.items.forEach((item,i)=>{
+    const id=`${cat.id}_${i}`;
+    const opts=HALLENSTUETZEN.map(s=>`<option value="${s}">${s}</option>`).join('');
+    html+=`
+    <div class="audit-item" id="item_${id}">
+      <div class="audit-item-header" onclick="toggleItem('${id}')">
+        <span>${i+1}. ${item}</span>
+        <div class="score-badge" id="badge_${id}">–</div>
+      </div>
+      <div class="audit-item-body" id="body_${id}">
+        <div style="margin-top:10px">
+          <label>Bewertung (1 = sehr schlecht / 5 = sehr gut)</label>
+          <div class="star-row">
+            ${[1,2,3,4,5].map(n=>`<button class="star-btn" id="star_${id}_${n}" onclick="setScore('${id}',${n})">${n}</button>`).join('')}
+          </div>
+          <div class="score-labels"><span>Sehr schlecht</span><span>Sehr gut</span></div>
+        </div>
+        <div class="form-row">
+          <label>💬 Abweichung / Bemerkung</label>
+          <textarea id="comment_${id}" placeholder="Abweichung beschreiben…" oninput="saveVal('${id}','comment')"></textarea>
+        </div>
+        <div class="form-row">
+          <label>📍 Hallenstütze / Standort</label>
+          <select id="loc_${id}" onchange="saveVal('${id}','loc')">
+            <option value="">– Kein Standort –</option>${opts}
+          </select>
+        </div>
+        <div class="form-row">
+          <label>📷 Foto</label>
+          <div class="photo-area" onclick="document.getElementById('fi_${id}').click()">
+            <span class="photo-label">📸 Foto aufnehmen / hochladen</span>
+            <span class="photo-sub">Klicken zum Auswählen</span>
+            <input type="file" id="fi_${id}" accept="image/*" capture="environment" onchange="handlePhoto('${id}',this)">
+          </div>
+          <div class="photo-thumbs" id="thumbs_${id}"></div>
+        </div>
+      </div>
+    </div>`;
+  });
+  const ni=CATEGORIES.findIndex(c=>c.id===cat.id)+1;
+  const nb=ni<CATEGORIES.length
+    ?`<button class="btn btn-primary" onclick="showPage('${CATEGORIES[ni].id}',document.querySelectorAll('.nav button')[${ni+1}])">Weiter: ${CATEGORIES[ni].key} ${CATEGORIES[ni].name} →</button>`
+    :`<button class="btn btn-primary" onclick="showPage('summaryPage',document.querySelectorAll('.nav button')[6])">📊 Ergebnis anzeigen</button>`;
+  page.innerHTML=html+nb;
+}
+
+function toggleItem(id){document.getElementById('body_'+id).classList.toggle('open')}
+
+function setScore(id,score){
+  state[id+'_score']=score;
+  const colors={1:'#e74c3c',2:'#e67e22',3:'#f39c12',4:'#2ecc71',5:'#27ae60'};
+  const badge=document.getElementById('badge_'+id);
+  badge.textContent=score;badge.style.background=colors[score];
+  const item=document.getElementById('item_'+id);
+  item.className='audit-item '+(score<=2?'scored-low':score===3?'scored-mid':'scored-high');
+  [1,2,3,4,5].forEach(n=>{
+    document.getElementById(`star_${id}_${n}`).className='star-btn'+(n===score?` sel-${n}`:'');
+  });
+}
+
+function saveVal(id,type){
+  state[id+'_'+type]=document.getElementById((type==='comment'?'comment_':'loc_')+id).value;
+}
+
+function handlePhoto(id,input){
+  if(!input.files||!input.files[0])return;
+  const r=new FileReader();
+  r.onload=e=>{
+    if(!state[id+'_photos'])state[id+'_photos']=[];
+    state[id+'_photos'].push(e.target.result);
+    renderThumbs(id);
+  };
+  r.readAsDataURL(input.files[0]);
+}
+
+function renderThumbs(id){
+  const t=document.getElementById('thumbs_'+id);
+  if(!t)return;
+  t.innerHTML=(state[id+'_photos']||[]).map((src,i)=>`<img class="photo-thumb" src="${src}" title="Entfernen" onclick="removePhoto('${id}',${i})">`).join('');
+}
+
+function removePhoto(id,i){state[id+'_photos'].splice(i,1);renderThumbs(id);}
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(id==='summaryPage')buildSummary();
+  window.scrollTo(0,0);
+}
+
+function getCatScore(cat){
+  const scores=cat.items.map((_,i)=>state[`${cat.id}_${i}_score`]||0);
+  const filled=scores.filter(s=>s>0);
+  return filled.length?filled.reduce((a,b)=>a+b,0)/filled.length:null;
+}
+
+function buildSummary(){
+  const scores=CATEGORIES.map(cat=>({cat,avg:getCatScore(cat)}));
+  const valid=scores.filter(s=>s.avg!==null);
+  const total=valid.length?valid.reduce((a,b)=>a+b.avg,0)/valid.length:0;
+  const col=total>=4?'#27ae60':total>=3?'#f39c12':'#e74c3c';
+  const circ=document.getElementById('totalCircle');
+  circ.style.background=col;
+  circ.innerHTML=`<span class="big">${total?total.toFixed(1):'–'}</span><span class="sub">von 5.0</span>`;
+  document.getElementById('totalLabel').textContent=total>=4?'✅ Gut – Standard eingehalten':total>=3?'⚠️ Ausreichend – Verbesserungen nötig':'❌ Kritisch – Sofortmaßnahmen erforderlich';
+  document.getElementById('totalSub').textContent=`${Math.round((total/5)*100)}% · ${valid.length} von 5 Kategorien bewertet`;
+
+  document.getElementById('catResults').innerHTML=scores.map(({cat,avg})=>{
+    const p=avg?Math.round((avg/5)*100):0;
+    const c=avg>=4?'#27ae60':avg>=3?'#f39c12':'#e74c3c';
+    return `<div class="category-row">
+      <div class="cat-name">${cat.key} ${cat.name}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${p}%;background:${c}"></div></div>
+      <div class="cat-score" style="color:${c}">${avg?avg.toFixed(1):'–'}</div>
+    </div>`;
+  }).join('');
+
+  let devHtml='';
+  CATEGORIES.forEach(cat=>{
+    cat.items.forEach((_,i)=>{
+      const id=`${cat.id}_${i}`;
+      const comment=state[id+'_comment']||'';
+      const loc=state[id+'_loc']||'';
+      const score=state[id+'_score'];
+      if(comment||loc||(score&&score<=3)){
+        devHtml+=`<div class="deviation-tag">
+          <b>${cat.key} Pkt.${i+1}</b>${score?` · <b style="color:${score<=2?'#e74c3c':score===3?'#f39c12':'#27ae60'}">${score}/5</b>`:''}<br>
+          ${loc?`📍 <b>${loc}</b><br>`:''}
+          ${comment?`💬 ${comment}`:''}
+        </div>`;
+      }
+    });
+  });
+  document.getElementById('deviationList').innerHTML=devHtml||'<p style="color:#aaa;font-size:13px;padding:8px 0">Keine Abweichungen erfasst.</p>';
+}
+
+async function generatePDF(){
+  showToast('PDF wird erstellt…');
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,M=14;let y=M;
+  doc.setFillColor(10,63,115);doc.rect(0,0,W,30,'F');
+  doc.setFillColor(15,92,163);doc.rect(0,0,W,22,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(18);doc.setFont('helvetica','bold');doc.text('ADK',M,13);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.text('MODULARE GEBÄUDE',M,19);
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text('5S Produktions-Audit',M+28,13);
+  const auditor=document.getElementById('auditor').value||'–';
+  const auditDate=document.getElementById('auditDate').value||'–';
+  const shift=document.getElementById('shift').value;
+  const area=document.getElementById('area').value;
+  doc.setFontSize(8);doc.setFont('helvetica','normal');
+  doc.text(`Prüfer: ${auditor}  |  ${auditDate}  |  ${shift}  |  ${area}  |  KW ${getWeek(auditDate)}`,M+28,20);
+  y=36;
+
+  const scores=CATEGORIES.map(cat=>({cat,avg:getCatScore(cat)}));
+  const valid=scores.filter(s=>s.avg!==null);
+  const total=valid.length?valid.reduce((a,b)=>a+b.avg,0)/valid.length:0;
+  const tc=total>=4?[39,174,96]:total>=3?[243,156,18]:[231,76,60];
+  doc.setFillColor(242,246,251);doc.roundedRect(M,y,W-M*2,22,3,3,'F');
+  doc.setFillColor(...tc);doc.roundedRect(M,y,34,22,3,3,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(18);doc.setFont('helvetica','bold');
+  doc.text(total?total.toFixed(1):'–',M+17,y+14,{align:'center'});
+  doc.setTextColor(...tc);doc.setFontSize(12);doc.setFont('helvetica','bold');
+  doc.text('Gesamtbewertung',M+40,y+9);
+  doc.setTextColor(80,80,80);doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text(`${Math.round((total/5)*100)}% · ${valid.length} von 5 Kategorien bewertet`,M+40,y+17);
+  y+=28;
+
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(10,63,115);
+  doc.text('Ergebnis je Kategorie',M,y);y+=7;
+  scores.forEach(({cat,avg})=>{
+    const p=avg?Math.round((avg/5)*100):0;
+    const c2=avg>=4?[39,174,96]:avg>=3?[243,156,18]:[231,76,60];
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
+    doc.text(`${cat.key} ${cat.name}`,M,y+3.5);
+    doc.setFillColor(220,232,245);doc.roundedRect(M+46,y,75,5,2,2,'F');
+    doc.setFillColor(...c2);doc.roundedRect(M+46,y,p*0.75,5,2,2,'F');
+    doc.setTextColor(...c2);doc.text(avg?avg.toFixed(1)+'/5':'–',M+126,y+4);
+    y+=9;
+  });
+  y+=4;
+
+  CATEGORIES.forEach(cat=>{
+    if(y>260){doc.addPage();y=M;}
+    doc.setFillColor(15,92,163);doc.rect(M,y,W-M*2,8,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(10);doc.setFont('helvetica','bold');
+    doc.text(`${cat.key} – ${cat.name}`,M+2,y+5.5);y+=11;
+    cat.items.forEach((item,i)=>{
+      if(y>268){doc.addPage();y=M;}
+      const id=`${cat.id}_${i}`;
+      const score=state[id+'_score']||0;
+      const comment=state[id+'_comment']||'';
+      const loc=state[id+'_loc']||'';
+      const photos=state[id+'_photos']||[];
+      doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.setTextColor(30,30,30);
+      const lines=doc.splitTextToSize(`${i+1}. ${item}`,W-M*2-22);
+      doc.text(lines,M+2,y);
+      if(score){
+        const sc=score>=4?[39,174,96]:score>=3?[243,156,18]:[231,76,60];
+        doc.setFillColor(...sc);doc.roundedRect(W-M-18,y-4.5,18,8,2,2,'F');
+        doc.setTextColor(255,255,255);doc.text(`${score}/5`,W-M-9,y+0.5,{align:'center'});
+      }
+      y+=lines.length*5;
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
+      if(loc){doc.text(`📍 ${loc}`,M+4,y);y+=5;}
+      if(comment){const cl=doc.splitTextToSize(`💬 ${comment}`,W-M*2-8);doc.text(cl,M+4,y);y+=cl.length*5;}
+      photos.forEach(src=>{
+        if(y>252){doc.addPage();y=M;}
+        try{doc.addImage(src,'JPEG',M+4,y,45,34);y+=37;}catch(e){}
+      });
+      y+=4;
+    });
+    y+=5;
+  });
+
+  const pages=doc.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);
+    doc.setFontSize(7.5);doc.setTextColor(160,160,160);
+    doc.text(`ADK Modulare Gebäude · 5S Audit KW${getWeek(auditDate)} · ${new Date().toLocaleDateString('de-DE')} · Seite ${p}/${pages}`,M,294);
+  }
+  doc.save(`ADK_5S_Audit_KW${getWeek(auditDate)}_${auditDate}.pdf`);
+  showToast('✅ PDF exportiert!');
+}
+
+function resetAudit(){
+  if(!confirm('Audit zurücksetzen? Alle Eingaben gehen verloren.'))return;
+  Object.keys(state).forEach(k=>delete state[k]);
+  init();CATEGORIES.forEach(cat=>buildCategoryPage(cat));
+  showPage('startPage',document.querySelectorAll('.nav button')[0]);
+  showToast('Audit zurückgesetzt.');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+init();
+</script>
+</body>
+</html>
